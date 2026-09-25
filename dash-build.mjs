@@ -661,6 +661,7 @@ let made = 0;
 if (latest) {
   for (const d of dates) {
     const rp = buildReplay(d, latest);
+    rp.dates = dates;   /* 只列真正生成了文件的日期，避免下拉里出现 404 */
     const js = JSON.stringify(rp);
     fs.writeFileSync(path.join(PUB, "replay", d + ".json"), js);
     if (d === today) fs.writeFileSync(path.join(PUB, "replay", "latest.json"), js);
