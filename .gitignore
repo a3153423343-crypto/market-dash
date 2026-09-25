@@ -1,0 +1,10 @@
+node_modules/
+data.json
+probe.mjs
+diag.mjs
+diag3.mjs
+gen.mjs
+gen2.mjs
+.ghlogin
+.ghtoken
+tools/

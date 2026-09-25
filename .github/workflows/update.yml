@@ -1,0 +1,58 @@
+name: update-dash
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 抓取数据并生成静态页
+        run: node dash-build.mjs
+
+      - name: 每日归档提交（保留回放历史）
+        run: |
+          if [ "$(date -u +%H)" != "08" ]; then
+            echo "非归档时段，跳过"; exit 0
+          fi
+          TODAY=$(TZ=Asia/Shanghai date +%F)
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f archive.json
+          for f in public/replay/*.json; do
+            b=$(basename "$f" .json)
+            if [ "$b" = "latest" ] || [ "$b" = "$TODAY" ]; then continue; fi
+            git add -f "$f"
+          done
+          if git diff --cached --quiet; then
+            echo "无变化"
+          else
+            git commit -m "归档 $(TZ=Asia/Shanghai date +%F)"
+            git push
+          fi
+
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+      - uses: actions/deploy-pages@v4
